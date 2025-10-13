@@ -1,0 +1,13 @@
+# overlays/dev/temporal/values.yaml
+server:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: "300m"
+      memory: "512Mi"
+web:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"

@@ -1,0 +1,41 @@
+# base/helm-chart/temporal/values.yaml
+nameOverride: temporal-ha
+fullnameOverride: temporal-ha
+
+prometheus:
+  enabled: true
+grafana:
+  enabled: false
+
+server:
+  replicaCount: 3
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  envFrom:
+    - secretRef:
+        name: temporal-sql-secrets
+  config:
+    persistence:
+      default:
+        driver: sql
+        sql:
+          pluginName: postgres
+          dsn: ${SQL_DEFAULT_DSN}
+      visibility:
+        driver: sql
+        sql:
+          pluginName: postgres
+          dsn: ${SQL_VISIBILITY_DSN}
+
+web:
+  replicaCount: 2
+  service:
+    type: ClusterIP
+
+cassandra:
+  enabled: false
+elasticsearch:
+  enabled: false
+mysql:
+  enabled: false
