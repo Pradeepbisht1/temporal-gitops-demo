@@ -11,12 +11,11 @@ spec:
   source:
     repoURL: https://cloudnative-pg.github.io/charts
     chart: cloudnative-pg
-    targetRevision: 0.22.0   # (example) keep as a string; use a stable version your cluster supports
+    targetRevision: 0.26.0
     helm:
       values: |
-        image:
-          # leave tag empty to let chart choose a valid default
-          pullPolicy: IfNotPresent
+        # keep defaults; set namespace explicitly
+        namespace: cnpg-system
   syncPolicy:
     automated:
       prune: true
