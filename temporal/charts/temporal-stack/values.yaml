@@ -1,7 +1,16 @@
-# ---- Temporal with Postgres (CNPG) ----
+# ---------- TURN OFF BACKENDS YOU DON'T USE ----------
+cassandra:
+  enabled: false
 
+elasticsearch:
+  enabled: false
+
+mysql:
+  enabled: false
+
+# ---------- TEMPORAL SERVER (Postgres via CNPG) ----------
 server:
-  # Per-service replicas (must be integers, not strings)
+  # Newer charts use per-service replicas under `replicas` (integers, no quotes)
   replicas:
     frontend: 2
     history: 2
@@ -21,12 +30,13 @@ server:
         driver: sql
         sql:
           driver: postgres12
-          host: temporal-pg-rw.postgres-temporal.svc
+          host: temporal-pg-rw.postgres-temporal.svc   # CNPG RW Service
           port: 5432
           database: temporal
-          existingSecret: temporal-ha-default-store
+          existingSecret: temporal-ha-default-store     # keys: username, password
           userKey: username
           passwordKey: password
+
       visibility:
         driver: sql
         sql:
@@ -34,10 +44,11 @@ server:
           host: temporal-pg-rw.postgres-temporal.svc
           port: 5432
           database: temporal_visibility
-          existingSecret: temporal-ha-visibility-store
+          existingSecret: temporal-ha-visibility-store  # keys: username, password
           userKey: username
           passwordKey: password
 
+# ---------- WEB ----------
 web:
   enabled: true
   replicaCount: 1
@@ -45,19 +56,8 @@ web:
     repository: temporalio/ui
     tag: "2.39.0"
     pullPolicy: IfNotPresent
-  service:
-    type: ClusterIP
-    port: 8080
 
-# Turn OFF unused backends
-cassandra:
-  enabled: false
-mysql:
-  enabled: false
-elasticsearch:
-  enabled: false
-
-# Schema jobs — use a suffix so Argo creates a NEW Job on first install
+# ---------- SCHEMA JOBS (avoid immutable patch) ----------
 schema:
   createDatabase:
     enabled: true
@@ -67,20 +67,25 @@ schema:
   update:
     enabled: true
     backoffLimit: 100
-  jobNameSuffix: "-v1"
+  # Bump this whenever you hit "Job ... field is immutable"
+  jobNameSuffix: "-recreate1"
 
-# Minimal monitoring
+# ---------- MONITORING (bind to the existing PVC) ----------
 prometheus:
   enabled: true
   server:
     replicaCount: 1
+    persistentVolume:
+      enabled: true
+      # IMPORTANT: bind to the PVC Argo already created so it won't try to mutate spec
+      existingClaim: temporal-ha-dev1-prometheus-server
+      # Keep size here only for documentation; it is ignored when existingClaim is set
+      size: 8Gi
+      # Do NOT change storageClass or volumeName once bound
+      # storageClass: gp3   # leave commented if existingClaim is used
   pushgateway:
     enabled: true
   nodeExporter:
     enabled: false
   kubeStateMetrics:
     enabled: true
-
-grafana:
-  enabled: true
-  replicas: 1
