@@ -1,0 +1,86 @@
+# ---- Temporal with Postgres (CNPG) ----
+
+server:
+  # Per-service replicas (must be integers, not strings)
+  replicas:
+    frontend: 2
+    history: 2
+    matching: 2
+    worker: 2
+
+  image:
+    repository: temporalio/server
+    tag: "1.28.1"
+    pullPolicy: IfNotPresent
+
+  config:
+    logLevel: info
+    numHistoryShards: 512
+    persistence:
+      default:
+        driver: sql
+        sql:
+          driver: postgres12
+          host: temporal-pg-rw.postgres-temporal.svc
+          port: 5432
+          database: temporal
+          existingSecret: temporal-ha-default-store
+          userKey: username
+          passwordKey: password
+      visibility:
+        driver: sql
+        sql:
+          driver: postgres12
+          host: temporal-pg-rw.postgres-temporal.svc
+          port: 5432
+          database: temporal_visibility
+          existingSecret: temporal-ha-visibility-store
+          userKey: username
+          passwordKey: password
+
+web:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: temporalio/ui
+    tag: "2.39.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+
+# Turn OFF unused backends
+cassandra:
+  enabled: false
+mysql:
+  enabled: false
+elasticsearch:
+  enabled: false
+
+# Schema jobs — use a suffix so Argo creates a NEW Job on first install
+schema:
+  createDatabase:
+    enabled: true
+  setup:
+    enabled: true
+    backoffLimit: 100
+  update:
+    enabled: true
+    backoffLimit: 100
+  jobNameSuffix: "-v1"
+
+# Minimal monitoring
+prometheus:
+  enabled: true
+  server:
+    replicaCount: 1
+  pushgateway:
+    enabled: true
+  nodeExporter:
+    enabled: false
+  kubeStateMetrics:
+    enabled: true
+
+grafana:
+  enabled: true
+  replicas: 1
