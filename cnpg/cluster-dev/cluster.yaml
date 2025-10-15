@@ -1,0 +1,40 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: temporal-pg
+  namespace: postgres-temporal
+spec:
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+  primaryUpdateStrategy: unsupervised
+  storage:
+    size: 20Gi
+  superuserSecret:
+    name: temporal-pg-superuser
+  enableSuperuserAccess: true
+  bootstrap:
+    initdb:
+      database: temporal
+      owner: temporal
+      secret:
+        name: temporal-app-user
+  monitoring:
+    enablePodMonitor: false
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: eks.amazonaws.com/compute-type
+                operator: NotIn
+                values: ["fargate"]
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  # internal service names you can use for DSN:
+  # - temporal-pg-rw.postgres-temporal.svc.cluster.local (primary)
+  # - temporal-pg-ro.postgres-temporal.svc.cluster.local (read)
