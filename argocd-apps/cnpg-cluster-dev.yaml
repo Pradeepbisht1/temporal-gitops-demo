@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpg-cluster-dev
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    name: eks-gitops-bridge
+    namespace: postgres-temporal
+  source:
+    repoURL: <YOUR_GITHUB_REPO_URL>
+    targetRevision: HEAD
+    path: k8s/cnpg
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
