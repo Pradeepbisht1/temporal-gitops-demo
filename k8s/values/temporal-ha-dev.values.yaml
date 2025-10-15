@@ -12,27 +12,22 @@ server:
     enabled: true
     minAvailable: 1
 
-  # DSNs from secret
   envFrom:
     - secretRef:
         name: temporal-sql-secrets
 
-  # Force Helm config path; avoid docker defaults entirely
+  # Force Helm config, not docker.yaml
   additionalEnv:
     - name: TEMPORAL_ENV
       value: "kubernetes"
     - name: TEMPORAL_CONFIG_DIR
       value: "/etc/temporal/config"
-    - name: TEMPORAL_CONFIG_FILE
-      value: "/etc/temporal/config/config_template.yaml"
   additionalArgs:
     - "--env"
     - "kubernetes"
     - "--config"
-    - "/etc/temporal/config/config_template.yaml"
-    - "--allow-no-auth"
+    - "/etc/temporal/config/config.yaml"
 
-  # DSN-only with the correct driver name (postgres12!)
   config:
     persistence:
       default:
@@ -40,14 +35,14 @@ server:
         sql:
           driver: postgres12
           dsn: ${SQL_DEFAULT_DSN}
-          maxConns: 20
+          maxConns: 40
           maxConnLifetime: 1h
       visibility:
         driver: sql
         sql:
           driver: postgres12
           dsn: ${SQL_VISIBILITY_DSN}
-          maxConns: 20
+          maxConns: 40
           maxConnLifetime: 1h
 
 web:
@@ -55,7 +50,6 @@ web:
   service:
     type: ClusterIP
 
-# Disable other backends
 cassandra:
   enabled: false
 elasticsearch:
@@ -63,7 +57,6 @@ elasticsearch:
 mysql:
   enabled: false
 
-# Run schema jobs so Temporal tables get created/updated
 schema:
   createDatabase:
     enabled: false
