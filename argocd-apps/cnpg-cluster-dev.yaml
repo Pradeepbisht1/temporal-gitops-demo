@@ -9,9 +9,9 @@ spec:
     name: eks-gitops-bridge
     namespace: postgres-temporal
   source:
-    repoURL: <YOUR_GITHUB_REPO_URL>
-    targetRevision: HEAD
-    path: k8s/cnpg
+    repoURL: https://github.com/<your-org>/<your-repo>.git
+    targetRevision: main
+    path: cnpg/cluster-dev
   syncPolicy:
     automated:
       prune: true
