@@ -10,7 +10,7 @@ mysql:
 
 # ---------- TEMPORAL SERVER (Postgres via CNPG) ----------
 server:
-  # Per-service replicas (integers, not quoted)
+  # Newer charts use per-service replicas under `replicas` (integers, no quotes)
   replicas:
     frontend: 2
     history: 2
@@ -26,19 +26,17 @@ server:
     logLevel: info
     numHistoryShards: 512
     persistence:
-      # DEFAULT STORE
       default:
         driver: sql
         sql:
           driver: postgres12
-          host: temporal-pg-rw.postgres-temporal.svc
+          host: temporal-pg-rw.postgres-temporal.svc   # CNPG RW Service
           port: 5432
           database: temporal
-          existingSecret: temporal-ha-dev1-default-store   # must exist; keys below
+          existingSecret: temporal-ha-default-store     # keys: username, password
           userKey: username
           passwordKey: password
 
-      # VISIBILITY STORE
       visibility:
         driver: sql
         sql:
@@ -46,7 +44,7 @@ server:
           host: temporal-pg-rw.postgres-temporal.svc
           port: 5432
           database: temporal_visibility
-          existingSecret: temporal-ha-dev1-visibility-store # must exist; keys below
+          existingSecret: temporal-ha-visibility-store  # keys: username, password
           userKey: username
           passwordKey: password
 
@@ -59,8 +57,7 @@ web:
     tag: "2.39.0"
     pullPolicy: IfNotPresent
 
-# ---------- SCHEMA JOBS ----------
-# If you ever see "Job ... field is immutable", bump jobNameSuffix (e.g., -recreate5)
+# ---------- SCHEMA JOBS (avoid immutable patch) ----------
 schema:
   createDatabase:
     enabled: true
@@ -70,25 +67,25 @@ schema:
   update:
     enabled: true
     backoffLimit: 100
-  jobNameSuffix: "-recreate4"
+  # Bump this whenever you hit "Job ... field is immutable"
+  jobNameSuffix: "-recreate1"
 
-# ---------- MONITORING (bind to the existing Prometheus PVC) ----------
+# ---------- MONITORING (bind to the existing PVC) ----------
 prometheus:
   enabled: true
   server:
     replicaCount: 1
     persistentVolume:
       enabled: true
+      # IMPORTANT: bind to the PVC Argo already created so it won't try to mutate spec
       existingClaim: temporal-ha-dev1-prometheus-server
-      # Do NOT set size/storageClass/volumeName when using existingClaim
+      # Keep size here only for documentation; it is ignored when existingClaim is set
+      size: 8Gi
+      # Do NOT change storageClass or volumeName once bound
+      # storageClass: gp3   # leave commented if existingClaim is used
   pushgateway:
     enabled: true
   nodeExporter:
     enabled: false
   kubeStateMetrics:
     enabled: true
-
-# ---------- GRAFANA ----------
-grafana:
-  enabled: true
-  replicas: 1
