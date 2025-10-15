@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpg-operator
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    name: eks-gitops-bridge
+    namespace: cnpg-system
+  source:
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: cloudnative-pg
+    targetRevision: 0.22.0   # (example) keep as a string; use a stable version your cluster supports
+    helm:
+      values: |
+        image:
+          # leave tag empty to let chart choose a valid default
+          pullPolicy: IfNotPresent
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
