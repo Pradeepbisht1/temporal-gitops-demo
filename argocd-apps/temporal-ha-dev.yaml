@@ -5,54 +5,90 @@ metadata:
   namespace: argocd
 spec:
   project: default
+  destination:
+    name: eks-gitops-bridge
+    namespace: temporal
   source:
     repoURL: https://go.temporal.io/helm-charts
     chart: temporal
-    targetRevision: "*"
+    targetRevision: 0.47.0
     helm:
       values: |
         nameOverride: temporal-ha
         fullnameOverride: temporal-ha
+
         prometheus:
           enabled: true
         grafana:
           enabled: false
+
         server:
           replicaCount: 3
           podDisruptionBudget:
             enabled: true
             minAvailable: 1
+
           envFrom:
             - secretRef:
                 name: temporal-sql-secrets
+
+          additionalEnv:
+            - name: TEMPORAL_ENV
+              value: "kubernetes"
+            - name: TEMPORAL_CONFIG_DIR
+              value: "/etc/temporal/config"
+          additionalArgs:
+            - "--env"
+            - "kubernetes"
+            - "--config"
+            - "/etc/temporal/config/config.yaml"
+
           config:
             persistence:
               default:
                 driver: sql
                 sql:
-                  pluginName: postgres
+                  driver: postgres12
                   dsn: ${SQL_DEFAULT_DSN}
+                  maxConns: 20
+                  maxConnLifetime: 1h
               visibility:
                 driver: sql
                 sql:
-                  pluginName: postgres
+                  driver: postgres12
                   dsn: ${SQL_VISIBILITY_DSN}
-        web:
-          replicaCount: 2
-          service:
-            type: ClusterIP
+                  maxConns: 20
+                  maxConnLifetime: 1h
+
         cassandra:
           enabled: false
         elasticsearch:
           enabled: false
         mysql:
           enabled: false
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: temporal
+
+        schema:
+          createDatabase:
+            enabled: false
+          setup:
+            enabled: true
+            envFrom:
+              - secretRef:
+                  name: temporal-sql-secrets
+          update:
+            enabled: true
+            envFrom:
+              - secretRef:
+                  name: temporal-sql-secrets
+
+        web:
+          enabled: true
+          replicaCount: 2
+          service:
+            type: ClusterIP
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-    - CreateNamespace=true
+      - CreateNamespace=true
