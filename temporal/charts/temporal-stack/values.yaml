@@ -1,3 +1,8 @@
+# =========================
+# Temporal Stack - values.yaml
+# Target: official Temporal chart (you’re wrapping it in temporal-stack)
+# =========================
+
 # ---------- TURN OFF BACKENDS YOU DON'T USE ----------
 cassandra:
   enabled: false
@@ -10,6 +15,7 @@ mysql:
 
 # ---------- TEMPORAL SERVER (Postgres via CNPG) ----------
 server:
+  # Per-service replicas (integers, NO quotes)
   replicas:
     frontend: 2
     history: 2
@@ -24,6 +30,8 @@ server:
   config:
     logLevel: info
     numHistoryShards: 512
+
+    # Postgres via CloudNativePG (CNPG RW service)
     persistence:
       default:
         driver: sql
@@ -32,9 +40,10 @@ server:
           host: temporal-pg-rw.postgres-temporal.svc
           port: 5432
           database: temporal
-          existingSecret: temporal-ha-dev1-default-store   # <-- fix: add dev1
+          existingSecret: temporal-ha-dev1-default-store   # keys: username, password
           userKey: username
           passwordKey: password
+
       visibility:
         driver: sql
         sql:
@@ -42,9 +51,13 @@ server:
           host: temporal-pg-rw.postgres-temporal.svc
           port: 5432
           database: temporal_visibility
-          existingSecret: temporal-ha-dev1-visibility-store  # <-- fix: add dev1
+          existingSecret: temporal-ha-dev1-visibility-store # keys: username, password
           userKey: username
           passwordKey: password
+
+  # Optional: if your chart exposes an internalFrontend toggle, keep it off
+  internalFrontend:
+    enabled: false
 
 # ---------- WEB ----------
 web:
@@ -54,8 +67,22 @@ web:
     repository: temporalio/ui
     tag: "2.39.0"
     pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
 
-# ---------- SCHEMA JOBS (avoid immutable patch) ----------
+# ---------- ADMIN TOOLS ----------
+admintools:
+  enabled: true
+  image:
+    repository: temporalio/admin-tools
+    tag: "1.28.1-tctl-1.18.4-cli-1.4.1"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 22
+
+# ---------- SCHEMA JOBS (avoid immutable Job patch errors) ----------
 schema:
   createDatabase:
     enabled: true
@@ -65,19 +92,36 @@ schema:
   update:
     enabled: true
     backoffLimit: 100
-  jobNameSuffix: "-recreate1"
 
-# ---------- MONITORING (bind to the existing PVC) ----------
+  # IMPORTANT: bump this if you ever hit
+  # "Job ... field is immutable" on upgrade/sync
+  jobNameSuffix: "-recreate2"
+
+# ---------- MONITORING ----------
 prometheus:
   enabled: true
+
   server:
     replicaCount: 1
     persistentVolume:
       enabled: true
-      existingClaim: temporal-ha-dev1-prometheus-server
+      size: 8Gi
+      # Keep this matching the *already-bound* PVC's class to avoid immutable changes.
+      # Do NOT switch to existingClaim unless you also disable pruning or want to manage PVC outside Helm.
+      storageClass: gp3
+      # existingClaim: temporal-ha-dev1-prometheus-server  # <- leave commented to keep Helm managing the PVC
+
   pushgateway:
     enabled: true
+
+  # Disable nodeExporter to avoid scheduling/hostPort/affinity issues you saw
   nodeExporter:
     enabled: false
+
   kubeStateMetrics:
     enabled: true
+
+# ---------- GRAFANA ----------
+grafana:
+  enabled: true
+  replicas: 1
