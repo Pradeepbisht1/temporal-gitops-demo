@@ -10,7 +10,6 @@ mysql:
 
 # ---------- TEMPORAL SERVER (Postgres via CNPG) ----------
 server:
-  # Newer charts use per-service replicas under `replicas` (integers, no quotes)
   replicas:
     frontend: 2
     history: 2
@@ -30,10 +29,10 @@ server:
         driver: sql
         sql:
           driver: postgres12
-          host: temporal-pg-rw.postgres-temporal.svc   # CNPG RW Service
+          host: temporal-pg-rw.postgres-temporal.svc
           port: 5432
           database: temporal
-          existingSecret: temporal-ha-default-store     # keys: username, password
+          existingSecret: temporal-ha-default-store
           userKey: username
           passwordKey: password
 
@@ -44,20 +43,11 @@ server:
           host: temporal-pg-rw.postgres-temporal.svc
           port: 5432
           database: temporal_visibility
-          existingSecret: temporal-ha-visibility-store  # keys: username, password
+          existingSecret: temporal-ha-visibility-store
           userKey: username
           passwordKey: password
 
-# ---------- WEB ----------
-web:
-  enabled: true
-  replicaCount: 1
-  image:
-    repository: temporalio/ui
-    tag: "2.39.0"
-    pullPolicy: IfNotPresent
-
-# ---------- SCHEMA JOBS (avoid immutable patch) ----------
+# ---------- SCHEMA JOBS ----------
 schema:
   createDatabase:
     enabled: true
@@ -67,25 +57,22 @@ schema:
   update:
     enabled: true
     backoffLimit: 100
-  # Bump this whenever you hit "Job ... field is immutable"
-  jobNameSuffix: "-recreate1"
+  # bump this ONLY when you see "Job ... field is immutable"
+  jobNameSuffix: "-recreate2"
 
-# ---------- MONITORING (bind to the existing PVC) ----------
+# ---------- MONITORING ----------
 prometheus:
   enabled: true
   server:
     replicaCount: 1
     persistentVolume:
       enabled: true
-      # IMPORTANT: bind to the PVC Argo already created so it won't try to mutate spec
+      # pin to the bound PVC so Helm/Argo never tries to mutate spec
       existingClaim: temporal-ha-dev1-prometheus-server
-      # Keep size here only for documentation; it is ignored when existingClaim is set
-      size: 8Gi
-      # Do NOT change storageClass or volumeName once bound
-      # storageClass: gp3   # leave commented if existingClaim is used
+      size: 8Gi        # ignored when existingClaim is set
   pushgateway:
     enabled: true
   nodeExporter:
-    enabled: false
+    enabled: false     # avoids scheduling noise
   kubeStateMetrics:
     enabled: true
