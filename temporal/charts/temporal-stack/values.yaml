@@ -5,7 +5,7 @@ cassandra:
 elasticsearch:
   enabled: false
 
-# Temporal server uses SQL(Postgres)
+# Temporal server uses SQL (Postgres)
 server:
   config:
     persistence:
@@ -36,13 +36,11 @@ schema:
       - secretRef:
           name: temporal-sql-secrets
 
-# DaemonSet scheduling (Pending fix)
+# Prometheus: schedule node exporter on tainted nodes + reuse bound PVC
 prometheus:
   nodeExporter:
     tolerations:
       - operator: "Exists"
-prometheus:
   server:
     persistentVolume:
       existingClaim: temporal-ha-dev1-prometheus-server
-
