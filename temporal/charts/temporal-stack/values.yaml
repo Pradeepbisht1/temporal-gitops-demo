@@ -36,10 +36,37 @@ schema:
       - secretRef:
           name: temporal-sql-secrets
 
-# already added earlier (keep as-is)
 prometheus:
   nodeExporter:
+    # Keep broad tolerations so it can land on tainted nodes if needed
     tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
       - operator: "Exists"
-    nodeSelector:
-      eks.amazonaws.com/compute-type: ec2
+
+    # IMPORTANT: remove any previous nodeSelector you added
+    # nodeSelector: {}  # (ensure no eks.amazonaws.com/compute-type here)
+
+    # Exclude Fargate nodes using nodeAffinity (EC2 nodes will match)
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: eks.amazonaws.com/compute-type
+                  operator: NotIn
+                  values: ["fargate"]
+                - key: kubernetes.io/os
+                  operator: In
+                  values: ["linux"]
+
+    # (Optional) make it easier to schedule on busy nodes
+    resources:
+      requests:
+        cpu: 20m
+        memory: 30Mi
+
