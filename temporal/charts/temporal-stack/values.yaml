@@ -1,10 +1,8 @@
 # ---------- TURN OFF BACKENDS YOU DON'T USE ----------
 cassandra:
   enabled: false
-
 elasticsearch:
   enabled: false
-
 mysql:
   enabled: false
 
@@ -15,12 +13,10 @@ server:
     history: 2
     matching: 2
     worker: 2
-
   image:
     repository: temporalio/server
     tag: "1.28.1"
     pullPolicy: IfNotPresent
-
   config:
     logLevel: info
     numHistoryShards: 512
@@ -35,7 +31,6 @@ server:
           existingSecret: temporal-ha-default-store
           userKey: username
           passwordKey: password
-
       visibility:
         driver: sql
         sql:
@@ -57,8 +52,7 @@ schema:
   update:
     enabled: true
     backoffLimit: 100
-  # bump this ONLY when you see "Job ... field is immutable"
-  jobNameSuffix: "-recreate2"
+  jobNameSuffix: "-recreate2"  # force re-create if immutable
 
 # ---------- MONITORING ----------
 prometheus:
@@ -67,12 +61,11 @@ prometheus:
     replicaCount: 1
     persistentVolume:
       enabled: true
-      # pin to the bound PVC so Helm/Argo never tries to mutate spec
       existingClaim: temporal-ha-dev1-prometheus-server
-      size: 8Gi        # ignored when existingClaim is set
+      size: 8Gi
   pushgateway:
     enabled: true
   nodeExporter:
-    enabled: false     # avoids scheduling noise
+    enabled: false
   kubeStateMetrics:
     enabled: true
