@@ -5,9 +5,11 @@ metadata:
   namespace: argocd
 spec:
   project: default
+
   destination:
     name: eks-gitops-bridge
     namespace: temporal
+
   source:
     repoURL: https://go.temporal.io/helm-charts
     chart: temporal
@@ -19,6 +21,15 @@ spec:
 
         prometheus:
           enabled: true
+          # Node Exporter often needs tolerations to schedule on tainted nodes
+          nodeExporter:
+            tolerations:
+              - operator: "Exists"
+          # (Optional) if you already have a bound PVC for Prometheus and want to reuse it, uncomment and set the actual name:
+          # server:
+          #   persistentVolume:
+          #     existingClaim: temporal-ha-prometheus-server
+
         grafana:
           enabled: false
 
@@ -28,6 +39,7 @@ spec:
             enabled: true
             minAvailable: 1
 
+          # App DSNs (normal user) come from this secret
           envFrom:
             - secretRef:
                 name: temporal-sql-secrets
@@ -43,6 +55,7 @@ spec:
             - "--config"
             - "/etc/temporal/config/config.yaml"
 
+          # Use SQL (Postgres) persistence
           config:
             persistence:
               default:
@@ -60,6 +73,7 @@ spec:
                   maxConns: 20
                   maxConnLifetime: 1h
 
+        # Ensure non-SQL backends are disabled
         cassandra:
           enabled: false
         elasticsearch:
@@ -67,9 +81,13 @@ spec:
         mysql:
           enabled: false
 
+        # Run Postgres schema jobs; create DBs with admin DSN
         schema:
           createDatabase:
-            enabled: false
+            enabled: true
+            envFrom:
+              - secretRef:
+                  name: temporal-sql-secrets-admin
           setup:
             enabled: true
             envFrom:
@@ -86,9 +104,20 @@ spec:
           replicaCount: 2
           service:
             type: ClusterIP
+
+  # Ignore immutable PVC spec drift + keep normal automated sync
+  ignoreDifferences:
+    - group: ""
+      kind: PersistentVolumeClaim
+      jqPathExpressions:
+        - ".spec.storageClassName"
+        - ".spec.volumeName"
+        - ".spec.selector"
+
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
