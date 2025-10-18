@@ -1,9 +1,11 @@
+# Cassandra/ES disable
 cassandra:
   enabled: false
 
 elasticsearch:
   enabled: false
 
+# Temporal server uses SQL(Postgres)
 server:
   config:
     persistence:
@@ -16,6 +18,7 @@ server:
         sql:
           driver: "postgres"
 
+# Run Postgres schema jobs, wire secrets
 schema:
   createDatabase:
     enabled: true
@@ -33,6 +36,7 @@ schema:
       - secretRef:
           name: temporal-sql-secrets
 
+# DaemonSet scheduling (Pending fix)
 prometheus:
   nodeExporter:
     tolerations:
