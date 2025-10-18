@@ -36,11 +36,10 @@ schema:
       - secretRef:
           name: temporal-sql-secrets
 
-# Prometheus: schedule node exporter on tainted nodes + reuse bound PVC
+# already added earlier (keep as-is)
 prometheus:
   nodeExporter:
     tolerations:
       - operator: "Exists"
-  server:
-    persistentVolume:
-      existingClaim: temporal-ha-dev1-prometheus-server
+    nodeSelector:
+      eks.amazonaws.com/compute-type: ec2
