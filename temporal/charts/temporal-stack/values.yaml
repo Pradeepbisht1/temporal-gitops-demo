@@ -41,3 +41,8 @@ prometheus:
   nodeExporter:
     tolerations:
       - operator: "Exists"
+prometheus:
+  server:
+    persistentVolume:
+      existingClaim: temporal-ha-dev1-prometheus-server
+
