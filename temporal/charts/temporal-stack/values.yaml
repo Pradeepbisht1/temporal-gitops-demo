@@ -1,12 +1,9 @@
-# --- DISABLE Cassandra & ES paths ---
 cassandra:
   enabled: false
 
 elasticsearch:
   enabled: false
-  # agar sirf SQL visibility chahte ho to ES na chalao
 
-# --- PERSISTENCE: SQL (Postgres) ---
 server:
   config:
     persistence:
@@ -14,33 +11,28 @@ server:
         driver: "sql"
         sql:
           driver: "postgres"
-          # dsn ko env se lenge (secret se)
-          # dsn: ${SQL_DEFAULT_DSN}
       visibility:
         driver: "sql"
         sql:
           driver: "postgres"
-          # dsn: ${SQL_VISIBILITY_DSN}
 
-# --- SCHEMA JOBS: run for SQL ---
 schema:
   createDatabase:
-    enabled: true          # visibility DB create karwayega
+    enabled: true
     envFrom:
       - secretRef:
-          name: temporal-sql-secrets-admin   # superuser DSN (postgres)
+          name: temporal-sql-secrets-admin
   setup:
     enabled: true
     envFrom:
       - secretRef:
-          name: temporal-sql-secrets         # app user DSN (temporal)
+          name: temporal-sql-secrets
   update:
     enabled: true
     envFrom:
       - secretRef:
           name: temporal-sql-secrets
 
-# (Optional) Prometheus node exporter taints fix
 prometheus:
   nodeExporter:
     tolerations:
