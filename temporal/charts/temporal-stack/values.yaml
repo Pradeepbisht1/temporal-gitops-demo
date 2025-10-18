@@ -1,22 +1,32 @@
-# Cassandra/ES disable
+# === values.yaml (temporal/charts/temporal-stack/values.yaml) ===
+
+# Disable non-SQL backends
 cassandra:
   enabled: false
 
 elasticsearch:
   enabled: false
 
+mysql:
+  enabled: false
+
 # Temporal server uses SQL (Postgres)
 server:
+  # Pull SQL_* DSNs from secret
+  envFrom:
+    - secretRef:
+        name: temporal-sql-secrets
+
   config:
     persistence:
       default:
         driver: "sql"
         sql:
-          driver: "postgres"
+          driver: "postgres"       # uses ${SQL_DEFAULT_DSN} from the secret
       visibility:
         driver: "sql"
         sql:
-          driver: "postgres"
+          driver: "postgres"       # uses ${SQL_VISIBILITY_DSN} from the secret
 
 # Run Postgres schema jobs, wire secrets
 schema:
@@ -66,5 +76,3 @@ prometheus:
       requests:
         cpu: 10m
         memory: 20Mi
-
-
