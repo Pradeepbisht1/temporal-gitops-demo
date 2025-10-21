@@ -1,5 +1,4 @@
 temporal:
-  # Hard-disable non-SQL backends (you already set these via Argo, keep them here too)
   cassandra:
     enabled: false
   elasticsearch:
@@ -8,13 +7,13 @@ temporal:
     enabled: false
 
   server:
-    # Your existing SQL persistence stays as-is; if your chart supports 'postgres12', prefer it:
+    # SQL persistence wired to your DSN secrets
     config:
       persistence:
         default:
           driver: sql
           sql:
-            driver: postgres12   # change 'postgres' -> 'postgres12' if supported by your chart version
+            driver: postgres12
             dsn: ${SQL_DEFAULT_DSN}
             maxConns: 20
             maxConnLifetime: 1h
@@ -26,18 +25,18 @@ temporal:
             maxConns: 20
             maxConnLifetime: 1h
 
-    # CRITICAL: make the binary read the Helm-generated config (not docker.yaml)
+    # Make the binaries read the Helm-rendered config (NOT docker.yaml)
     additionalArgs:
-      - "--env"
-      - "kubernetes"
-      - "--config"
-      - "/etc/temporal/config/config.yaml"
+      - --env
+      - kubernetes
+      - --config
+      - /etc/temporal/config/config_template.yaml
 
     additionalEnv:
       - name: TEMPORAL_ENV
-        value: "kubernetes"
+        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
-        value: "/etc/temporal/config"
+        value: /etc/temporal/config
       - name: SQL_DEFAULT_DSN
         valueFrom:
           secretKeyRef:
@@ -49,40 +48,39 @@ temporal:
             name: temporal-sql-secrets
             key: visibility.sql.dsn
 
-  # Belt-and-suspenders: ensure EVERY service uses kubernetes env/paths
+  # Belt-and-suspenders: ensure *each* service also points at the same config path
   frontend:
-    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config.yaml"]
+    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
       - name: TEMPORAL_ENV
-        value: "kubernetes"
+        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
-        value: "/etc/temporal/config"
+        value: /etc/temporal/config
 
   history:
-    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config.yaml"]
+    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
       - name: TEMPORAL_ENV
-        value: "kubernetes"
+        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
-        value: "/etc/temporal/config"
+        value: /etc/temporal/config
 
   matching:
-    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config.yaml"]
+    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
       - name: TEMPORAL_ENV
-        value: "kubernetes"
+        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
-        value: "/etc/temporal/config"
+        value: /etc/temporal/config
 
   worker:
-    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config.yaml"]
+    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
       - name: TEMPORAL_ENV
-        value: "kubernetes"
+        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
-        value: "/etc/temporal/config"
-        
+        value: /etc/temporal/config
+
 prometheus:
   nodeExporter:
     enabled: false
-
