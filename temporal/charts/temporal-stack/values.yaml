@@ -14,7 +14,7 @@ temporal:
         default:
           driver: sql
           sql:
-            driver: postgres12        # use postgres12 driver
+            driver: postgres12
             dsn: ${SQL_DEFAULT_DSN}
             maxConns: 20
             maxConnLifetime: 1h
@@ -26,18 +26,15 @@ temporal:
             maxConns: 20
             maxConnLifetime: 1h
 
-    # 🚨 ALWAYS start with k8s env + the mounted file path
+    # Always start the server process and point to the mounted config file
     command: ["temporal-server"]
     args:
       - start
-      - --env
-      - kubernetes
       - --config
       - /etc/temporal/config/config_template.yaml
 
     additionalEnv:
-      - name: TEMPORAL_ENV
-        value: kubernetes
+      # Don't pass --env. Just ensure absolute config dir is set.
       - name: TEMPORAL_CONFIG_DIR
         value: /etc/temporal/config
       - name: SQL_DEFAULT_DSN
@@ -51,40 +48,32 @@ temporal:
             name: temporal-sql-secrets
             key: visibility.sql.dsn
 
-  # Also pin each service (some chart variants run them as separate Deployments)
+  # Pin each service similarly (charts that split Deployments will use these)
   frontend:
     command: ["temporal-server"]
-    args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
+    args: ["start","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
-      - name: TEMPORAL_ENV
-        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
         value: /etc/temporal/config
 
   history:
     command: ["temporal-server"]
-    args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
+    args: ["start","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
-      - name: TEMPORAL_ENV
-        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
         value: /etc/temporal/config
 
   matching:
     command: ["temporal-server"]
-    args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
+    args: ["start","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
-      - name: TEMPORAL_ENV
-        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
         value: /etc/temporal/config
 
   worker:
     command: ["temporal-server"]
-    args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
+    args: ["start","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
-      - name: TEMPORAL_ENV
-        value: kubernetes
       - name: TEMPORAL_CONFIG_DIR
         value: /etc/temporal/config
 
