@@ -1,4 +1,7 @@
-# === values.yaml (temporal/charts/temporal-stack/values.yaml) ===
+# --- temporal/charts/temporal-stack/values.yaml ---
+
+nameOverride: temporal-ha
+fullnameOverride: temporal-ha
 
 # Disable non-SQL backends
 cassandra:
@@ -10,25 +13,64 @@ elasticsearch:
 mysql:
   enabled: false
 
-# Temporal server uses SQL (Postgres)
+prometheus:
+  enabled: true
+  # OPTIONAL: node-exporter tolerations/affinity—keep or drop based on your cluster
+  nodeExporter:
+    tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - operator: "Exists"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: eks.amazonaws.com/compute-type
+                  operator: NotIn
+                  values: ["fargate"]
+                - key: kubernetes.io/os
+                  operator: In
+                  values: ["linux"]
+
+grafana:
+  enabled: false
+
 server:
-  # Pull SQL_* DSNs from secret
+  replicaCount: 3
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  # Load app DSNs from the normal user secret
   envFrom:
     - secretRef:
         name: temporal-sql-secrets
 
+  # Use SQL (Postgres) persistence via Helm values
   config:
     persistence:
       default:
-        driver: "sql"
+        driver: sql
         sql:
-          driver: "postgres"       # uses ${SQL_DEFAULT_DSN} from the secret
+          # postgres / postgres12 both work with current chart; prefer postgres
+          driver: postgres
+          dsn: ${SQL_DEFAULT_DSN}
+          maxConns: 20
+          maxConnLifetime: 1h
       visibility:
-        driver: "sql"
+        driver: sql
         sql:
-          driver: "postgres"       # uses ${SQL_VISIBILITY_DSN} from the secret
+          driver: postgres
+          dsn: ${SQL_VISIBILITY_DSN}
+          maxConns: 20
+          maxConnLifetime: 1h
 
-# Run Postgres schema jobs, wire secrets
+# Run Postgres schema jobs and let Helm create DBs using the admin DSN
 schema:
   createDatabase:
     enabled: true
@@ -46,33 +88,8 @@ schema:
       - secretRef:
           name: temporal-sql-secrets
 
-prometheus:
-  nodeExporter:
-    # land on tainted nodes too
-    tolerations:
-      - key: "node-role.kubernetes.io/control-plane"
-        operator: "Exists"
-        effect: "NoSchedule"
-      - key: "node-role.kubernetes.io/master"
-        operator: "Exists"
-        effect: "NoSchedule"
-      - operator: "Exists"
-
-    # exclude Fargate; only schedule on non-Fargate Linux nodes
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: eks.amazonaws.com/compute-type
-                  operator: NotIn
-                  values: ["fargate"]
-                - key: kubernetes.io/os
-                  operator: In
-                  values: ["linux"]
-
-    # keep requests small for easier placement
-    resources:
-      requests:
-        cpu: 10m
-        memory: 20Mi
+web:
+  enabled: true
+  replicaCount: 2
+  service:
+    type: ClusterIP
