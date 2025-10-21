@@ -1,49 +1,51 @@
 # temporal/charts/temporal-stack/values.yaml
-
 temporal:
-  # --- Disable Cassandra & Elasticsearch completely ---
   cassandra:
     enabled: false
   elasticsearch:
     enabled: false
 
   server:
-    # --- Temporal uses SQL(Postgres) for default & visibility stores ---
     config:
       persistence:
         default:
           driver: sql
           sql:
-            pluginName: postgres
-            # DSN is read from a Secret
-            existingSecret: temporal-sql-secrets
-            existingSecretKey: default.sql.dsn
+            driver: postgres12           # use "postgres12" for Temporal chart
+            host: temporal-pg-rw.postgres-temporal.svc.cluster.local
+            port: 5432
+            database: temporal
+            user: temporal
+            existingSecret: temporal-sql-secrets   # chart will read key "password" from this secret
         visibility:
           driver: sql
           sql:
-            pluginName: postgres
+            driver: postgres12
+            host: temporal-pg-rw.postgres-temporal.svc.cluster.local
+            port: 5432
+            database: temporal_visibility
+            user: temporal
             existingSecret: temporal-sql-secrets
-            existingSecretKey: visibility.sql.dsn
 
-    # --- Mount CNPG CA so sslmode=verify-full works from DSN ---
+    # keep your CA mount if/when you move to TLS; with sslmode=disable it's not used
     extraVolumes:
       - name: pg-ca
         secret:
-          secretName: temporal-pg-ca        # already present in postgres-temporal; copy/create in `temporal` ns if needed
+          secretName: temporal-pg-ca
     extraVolumeMounts:
       - name: pg-ca
         mountPath: /var/run/temporal/pg
         readOnly: true
 
-    # --- Schema Jobs (admin DSN) as Argo hooks (immutable-safe) ---
+    # Schema Jobs as Argo hooks (we’ll tweak deletion policy below)
     schema:
       setup:
         enabled: true
         existingSecret: temporal-sql-secrets-admin
-        existingSecretKey: default.sql.dsn
+        existingSecretKey: default.sql.dsn   # this key is fine for the schema job (it uses DSN)
         annotations:
           argocd.argoproj.io/hook: PreSync
-          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded,HookFailed
           argocd.argoproj.io/sync-wave: "-1"
       update:
         enabled: true
@@ -51,5 +53,5 @@ temporal:
         existingSecretKey: default.sql.dsn
         annotations:
           argocd.argoproj.io/hook: PreSync
-          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded,HookFailed
           argocd.argoproj.io/sync-wave: "-1"
