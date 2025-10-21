@@ -1,5 +1,4 @@
 temporal:
-  # hard-disable non-sql stores
   cassandra:
     enabled: false
   elasticsearch:
@@ -7,7 +6,6 @@ temporal:
   mysql:
     enabled: false
 
-  # ---- SQL persistence (Postgres via CNPG) ----
   server:
     config:
       persistence:
@@ -26,13 +24,16 @@ temporal:
             maxConns: 20
             maxConnLifetime: 1h
 
-    # IMPORTANT: tell binaries to use the mounted config file (the chart mounts config_template.yaml)
-    additionalArgs:
+    # 🔒 hard-pin process startup flags via command/args
+    command: ["temporal-server"]
+    args:
+      - start
       - --env
       - kubernetes
       - --config
       - /etc/temporal/config/config_template.yaml
 
+    # env for consistency (ok if template ignores these)
     additionalEnv:
       - name: TEMPORAL_ENV
         value: kubernetes
@@ -49,9 +50,10 @@ temporal:
             name: temporal-sql-secrets
             key: visibility.sql.dsn
 
-  # also push the same flags/env to each service (belt & suspenders)
+  # (Optional) also pin per service, in case your chart launches them separately
   frontend:
-    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
+    command: ["temporal-server"]
+    args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
       - name: TEMPORAL_ENV
         value: kubernetes
@@ -59,7 +61,8 @@ temporal:
         value: /etc/temporal/config
 
   history:
-    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
+    command: ["temporal-server"]
+    args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
       - name: TEMPORAL_ENV
         value: kubernetes
@@ -67,7 +70,8 @@ temporal:
         value: /etc/temporal/config
 
   matching:
-    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
+    command: ["temporal-server"]
+    args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
       - name: TEMPORAL_ENV
         value: kubernetes
@@ -75,7 +79,8 @@ temporal:
         value: /etc/temporal/config
 
   worker:
-    additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
+    command: ["temporal-server"]
+    args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
       - name: TEMPORAL_ENV
         value: kubernetes
