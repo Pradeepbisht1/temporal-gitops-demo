@@ -1,21 +1,80 @@
 # --- temporal/charts/temporal-stack/values.yaml ---
 
-nameOverride: temporal-ha
-fullnameOverride: temporal-ha
+# Values for the wrapper "temporal-stack" chart
+# All Temporal chart overrides must live under the "temporal:" key (the dependency's name).
 
-# Disable non-SQL backends
-cassandra:
-  enabled: false
+# --- Temporal subchart overrides (IMPORTANT: nested) ---
+temporal:
+  nameOverride: temporal-ha
+  fullnameOverride: temporal-ha
 
-elasticsearch:
-  enabled: false
+  # Disable non-SQL backends
+  cassandra:
+    enabled: false
 
-mysql:
-  enabled: false
+  elasticsearch:
+    enabled: false
 
+  mysql:
+    enabled: false
+
+  server:
+    replicaCount: 3
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+
+    # Load application DSNs from the normal user secret
+    envFrom:
+      - secretRef:
+          name: temporal-sql-secrets
+
+    # Run Temporal with SQL (Postgres) persistence
+    config:
+      persistence:
+        default:
+          driver: sql
+          sql:
+            driver: postgres
+            dsn: ${SQL_DEFAULT_DSN}
+            maxConns: 20
+            maxConnLifetime: 1h
+        visibility:
+          driver: sql
+          sql:
+            driver: postgres
+            dsn: ${SQL_VISIBILITY_DSN}
+            maxConns: 20
+            maxConnLifetime: 1h
+
+  # Schema jobs for Postgres (DBs created by admin DSN)
+  schema:
+    createDatabase:
+      enabled: true
+      envFrom:
+        - secretRef:
+            name: temporal-sql-secrets-admin
+    setup:
+      enabled: true
+      envFrom:
+        - secretRef:
+            name: temporal-sql-secrets
+    update:
+      enabled: true
+      envFrom:
+        - secretRef:
+            name: temporal-sql-secrets
+
+  web:
+    enabled: true
+    replicaCount: 2
+    service:
+      type: ClusterIP
+
+# --- Prometheus / Grafana wrappers (if this stack also deploys them) ---
 prometheus:
   enabled: true
-  # OPTIONAL: node-exporter tolerations/affinity—keep or drop based on your cluster
+  # Optional: node-exporter scheduling (avoid Fargate only nodes)
   nodeExporter:
     tolerations:
       - key: "node-role.kubernetes.io/control-plane"
@@ -39,57 +98,3 @@ prometheus:
 
 grafana:
   enabled: false
-
-server:
-  replicaCount: 3
-  podDisruptionBudget:
-    enabled: true
-    minAvailable: 1
-
-  # Load app DSNs from the normal user secret
-  envFrom:
-    - secretRef:
-        name: temporal-sql-secrets
-
-  # Use SQL (Postgres) persistence via Helm values
-  config:
-    persistence:
-      default:
-        driver: sql
-        sql:
-          # postgres / postgres12 both work with current chart; prefer postgres
-          driver: postgres
-          dsn: ${SQL_DEFAULT_DSN}
-          maxConns: 20
-          maxConnLifetime: 1h
-      visibility:
-        driver: sql
-        sql:
-          driver: postgres
-          dsn: ${SQL_VISIBILITY_DSN}
-          maxConns: 20
-          maxConnLifetime: 1h
-
-# Run Postgres schema jobs and let Helm create DBs using the admin DSN
-schema:
-  createDatabase:
-    enabled: true
-    envFrom:
-      - secretRef:
-          name: temporal-sql-secrets-admin
-  setup:
-    enabled: true
-    envFrom:
-      - secretRef:
-          name: temporal-sql-secrets
-  update:
-    enabled: true
-    envFrom:
-      - secretRef:
-          name: temporal-sql-secrets
-
-web:
-  enabled: true
-  replicaCount: 2
-  service:
-    type: ClusterIP
