@@ -81,15 +81,8 @@ temporal:
         value: "kubernetes"
       - name: TEMPORAL_CONFIG_DIR
         value: "/etc/temporal/config"
+        
 prometheus:
   nodeExporter:
-    nodeSelector:
-      node-class: ec2
-    tolerations:
-      - key: "node-role.kubernetes.io/control-plane"
-        operator: "Exists"
-        effect: "NoSchedule"
-      - key: "node-role.kubernetes.io/master"
-        operator: "Exists"
-        effect: "NoSchedule"
-      - operator: "Exists"
+    enabled: false
+
