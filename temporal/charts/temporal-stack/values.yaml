@@ -1,4 +1,5 @@
 temporal:
+  # hard-disable non-sql stores
   cassandra:
     enabled: false
   elasticsearch:
@@ -6,8 +7,8 @@ temporal:
   mysql:
     enabled: false
 
+  # ---- SQL persistence (Postgres via CNPG) ----
   server:
-    # SQL persistence wired to your DSN secrets
     config:
       persistence:
         default:
@@ -25,7 +26,7 @@ temporal:
             maxConns: 20
             maxConnLifetime: 1h
 
-    # Make the binaries read the Helm-rendered config (NOT docker.yaml)
+    # IMPORTANT: tell binaries to use the mounted config file (the chart mounts config_template.yaml)
     additionalArgs:
       - --env
       - kubernetes
@@ -48,7 +49,7 @@ temporal:
             name: temporal-sql-secrets
             key: visibility.sql.dsn
 
-  # Belt-and-suspenders: ensure *each* service also points at the same config path
+  # also push the same flags/env to each service (belt & suspenders)
   frontend:
     additionalArgs: ["--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
     additionalEnv:
