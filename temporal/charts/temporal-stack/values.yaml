@@ -1,14 +1,10 @@
 temporal:
-  # hard-disable non-SQL backends
-  cassandra:
-    enabled: false
-  elasticsearch:
-    enabled: false
-  mysql:
-    enabled: false
+  cassandra: { enabled: false }
+  elasticsearch: { enabled: false }
+  mysql: { enabled: false }
 
   server:
-    # SQL persistence using env DSNs from secret (already created)
+    # DSNs still come from secrets via env
     config:
       persistence:
         default:
@@ -26,56 +22,46 @@ temporal:
             maxConns: 20
             maxConnLifetime: 1h
 
-    # Always start the server process and point to the mounted config file
     command: ["temporal-server"]
-    args:
-      - start
-      - --config
-      - /etc/temporal/config/config_template.yaml
+    # Use equals form to avoid any arg parsing weirdness
+    args: ["start","--config=/etc/temporal/config/config_template.yaml"]
 
     additionalEnv:
-      # Don't pass --env. Just ensure absolute config dir is set.
       - name: TEMPORAL_CONFIG_DIR
         value: /etc/temporal/config
       - name: SQL_DEFAULT_DSN
-        valueFrom:
-          secretKeyRef:
-            name: temporal-sql-secrets
-            key: default.sql.dsn
+        valueFrom: { secretKeyRef: { name: temporal-sql-secrets, key: default.sql.dsn } }
       - name: SQL_VISIBILITY_DSN
-        valueFrom:
-          secretKeyRef:
-            name: temporal-sql-secrets
-            key: visibility.sql.dsn
+        valueFrom: { secretKeyRef: { name: temporal-sql-secrets, key: visibility.sql.dsn } }
 
-  # Pin each service similarly (charts that split Deployments will use these)
+  # Each split deployment must pin its own service
   frontend:
     command: ["temporal-server"]
-    args: ["start","--config","/etc/temporal/config/config_template.yaml"]
+    args:
+      ["start","--config=/etc/temporal/config/config_template.yaml","--service","frontend"]
     additionalEnv:
-      - name: TEMPORAL_CONFIG_DIR
-        value: /etc/temporal/config
+      - { name: TEMPORAL_CONFIG_DIR, value: /etc/temporal/config }
 
   history:
     command: ["temporal-server"]
-    args: ["start","--config","/etc/temporal/config/config_template.yaml"]
+    args:
+      ["start","--config=/etc/temporal/config/config_template.yaml","--service","history"]
     additionalEnv:
-      - name: TEMPORAL_CONFIG_DIR
-        value: /etc/temporal/config
+      - { name: TEMPORAL_CONFIG_DIR, value: /etc/temporal/config }
 
   matching:
     command: ["temporal-server"]
-    args: ["start","--config","/etc/temporal/config/config_template.yaml"]
+    args:
+      ["start","--config=/etc/temporal/config/config_template.yaml","--service","matching"]
     additionalEnv:
-      - name: TEMPORAL_CONFIG_DIR
-        value: /etc/temporal/config
+      - { name: TEMPORAL_CONFIG_DIR, value: /etc/temporal/config }
 
   worker:
     command: ["temporal-server"]
-    args: ["start","--config","/etc/temporal/config/config_template.yaml"]
+    args:
+      ["start","--config=/etc/temporal/config/config_template.yaml","--service","worker"]
     additionalEnv:
-      - name: TEMPORAL_CONFIG_DIR
-        value: /etc/temporal/config
+      - { name: TEMPORAL_CONFIG_DIR, value: /etc/temporal/config }
 
 prometheus:
   nodeExporter:
