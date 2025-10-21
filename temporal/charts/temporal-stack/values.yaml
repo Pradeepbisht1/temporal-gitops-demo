@@ -1,4 +1,5 @@
 temporal:
+  # hard-disable non-SQL backends
   cassandra:
     enabled: false
   elasticsearch:
@@ -7,12 +8,13 @@ temporal:
     enabled: false
 
   server:
+    # SQL persistence using env DSNs from secret (already created)
     config:
       persistence:
         default:
           driver: sql
           sql:
-            driver: postgres12
+            driver: postgres12        # use postgres12 driver
             dsn: ${SQL_DEFAULT_DSN}
             maxConns: 20
             maxConnLifetime: 1h
@@ -24,7 +26,7 @@ temporal:
             maxConns: 20
             maxConnLifetime: 1h
 
-    # 🔒 hard-pin process startup flags via command/args
+    # 🚨 ALWAYS start with k8s env + the mounted file path
     command: ["temporal-server"]
     args:
       - start
@@ -33,7 +35,6 @@ temporal:
       - --config
       - /etc/temporal/config/config_template.yaml
 
-    # env for consistency (ok if template ignores these)
     additionalEnv:
       - name: TEMPORAL_ENV
         value: kubernetes
@@ -50,7 +51,7 @@ temporal:
             name: temporal-sql-secrets
             key: visibility.sql.dsn
 
-  # (Optional) also pin per service, in case your chart launches them separately
+  # Also pin each service (some chart variants run them as separate Deployments)
   frontend:
     command: ["temporal-server"]
     args: ["start","--env","kubernetes","--config","/etc/temporal/config/config_template.yaml"]
