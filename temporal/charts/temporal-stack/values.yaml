@@ -9,6 +9,7 @@ temporal:
       repository: temporalio/server
       tag: "1.28.1"
 
+    # optional, silence warning
     extraArgs:
       - --allow-no-auth
 
@@ -22,7 +23,7 @@ temporal:
             port: 5432
             database: temporal
             user: temporal
-            existingSecret: temporal-sql-secrets     # key: password
+            existingSecret: temporal-sql-secrets    # key: password
         visibility:
           driver: sql
           sql:
@@ -31,8 +32,9 @@ temporal:
             port: 5432
             database: temporal_visibility
             user: temporal
-            existingSecret: temporal-sql-secrets     # key: password
+            existingSecret: temporal-sql-secrets    # key: password
 
+    # (optional; only used if you enable TLS to PG later)
     extraVolumes:
       - name: pg-ca
         secret:
@@ -45,16 +47,16 @@ temporal:
     schema:
       image:
         repository: temporalio/admin-tools
-        tag: "1.28"   # known-good; avoids 404s
+        tag: "1.28"   # valid tag; avoid 1.28.0 & 1.28.1 if your registry doesn’t have them
 
       setup:
         enabled: true
         datastores:
           default:
-            existingSecret: temporal-sql-secrets-admin
+            existingSecret: temporal-sql-secrets-admin-override
             existingSecretKey: default.sql.dsn
           visibility:
-            existingSecret: temporal-sql-secrets-admin
+            existingSecret: temporal-sql-secrets-admin-override
             existingSecretKey: visibility.sql.dsn
         annotations:
           argocd.argoproj.io/hook: PreSync
@@ -65,10 +67,10 @@ temporal:
         enabled: true
         datastores:
           default:
-            existingSecret: temporal-sql-secrets-admin
+            existingSecret: temporal-sql-secrets-admin-override
             existingSecretKey: default.sql.dsn
           visibility:
-            existingSecret: temporal-sql-secrets-admin
+            existingSecret: temporal-sql-secrets-admin-override
             existingSecretKey: visibility.sql.dsn
         annotations:
           argocd.argoproj.io/hook: PreSync
