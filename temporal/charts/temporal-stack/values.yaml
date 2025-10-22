@@ -1,6 +1,8 @@
+# charts/temporal-stack/values.yaml
 temporal:
   cassandra:
     enabled: false
+
   elasticsearch:
     enabled: false
 
@@ -9,7 +11,7 @@ temporal:
       repository: temporalio/server
       tag: "1.28.1"
 
-    # optional, silence warning
+    # Optional: silence auth warning in dev
     extraArgs:
       - --allow-no-auth
 
@@ -23,7 +25,8 @@ temporal:
             port: 5432
             database: temporal
             user: temporal
-            existingSecret: temporal-sql-secrets    # key: password
+            # Secret must contain key: password
+            existingSecret: temporal-sql-secrets
         visibility:
           driver: sql
           sql:
@@ -32,9 +35,10 @@ temporal:
             port: 5432
             database: temporal_visibility
             user: temporal
-            existingSecret: temporal-sql-secrets    # key: password
+            # Secret must contain key: password
+            existingSecret: temporal-sql-secrets
 
-    # (optional; only used if you enable TLS to PG later)
+    # Optional (only if you later enable TLS to Postgres)
     extraVolumes:
       - name: pg-ca
         secret:
@@ -49,12 +53,13 @@ temporal:
         repository: temporalio/admin-tools
         tag: "1.28"
 
-      # Disable built-in schema jobs (DBs already initialized/migrated)
+      # Disable built-in schema jobs — DBs already initialized/migrated
       setup:
         enabled: false
       update:
         enabled: false
 
+      # Keep namespace creation on (harmless; creates 'default' ns if missing)
       createNamespace:
         enabled: true
         namespace: default
