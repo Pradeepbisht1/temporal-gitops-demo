@@ -47,35 +47,13 @@ temporal:
     schema:
       image:
         repository: temporalio/admin-tools
-        tag: "1.28"   # valid tag; avoid 1.28.0 & 1.28.1 if your registry doesn’t have them
+        tag: "1.28"
 
+      # We disable built-in schema jobs since DBs are already initialized/migrated
       setup:
-        enabled: true
-        datastores:
-          default:
-            existingSecret: temporal-sql-secrets-admin-override
-            existingSecretKey: default.sql.dsn
-          visibility:
-            existingSecret: temporal-sql-secrets-admin-override
-            existingSecretKey: visibility.sql.dsn
-        annotations:
-          argocd.argoproj.io/hook: PreSync
-          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookFailed
-          argocd.argoproj.io/sync-wave: "-1"
-
+        enabled: false
       update:
-        enabled: true
-        datastores:
-          default:
-            existingSecret: temporal-sql-secrets-admin-override
-            existingSecretKey: default.sql.dsn
-          visibility:
-            existingSecret: temporal-sql-secrets-admin-override
-            existingSecretKey: visibility.sql.dsn
-        annotations:
-          argocd.argoproj.io/hook: PreSync
-          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookFailed
-          argocd.argoproj.io/sync-wave: "-1"
+        enabled: false
 
       createNamespace:
         enabled: true
