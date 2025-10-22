@@ -5,12 +5,11 @@ temporal:
     enabled: false
 
   server:
-    # Keep server at a real tag you already use successfully
     image:
       repository: temporalio/server
       tag: "1.28.1"
 
-    # Silence the auth warning seen in logs
+    # Optional: removes auth warnings in logs (keep if you're not using auth)
     extraArgs:
       - --allow-no-auth
 
@@ -24,7 +23,7 @@ temporal:
             port: 5432
             database: temporal
             user: temporal
-            existingSecret: temporal-sql-secrets     # reads key "password"
+            existingSecret: temporal-sql-secrets     # key: password
         visibility:
           driver: sql
           sql:
@@ -33,7 +32,7 @@ temporal:
             port: 5432
             database: temporal_visibility
             user: temporal
-            existingSecret: temporal-sql-secrets
+            existingSecret: temporal-sql-secrets     # key: password
 
     extraVolumes:
       - name: pg-ca
@@ -44,17 +43,14 @@ temporal:
         mountPath: /var/run/temporal/pg
         readOnly: true
 
-    # --- Schema Jobs (run by Argo CD hooks) ---
+    # --- Schema Jobs (as Argo CD hooks) ---
     schema:
-      # Image/tag that actually exists (avoid 1.28.0 which 404s)
       image:
         repository: temporalio/admin-tools
-        tag: "1.28"
+        tag: "1.28"   # valid tag
 
       setup:
         enabled: true
-        # If you store DSNs in a secret (recommended for schema jobs),
-        # provide *both* default and visibility DSNs:
         datastores:
           default:
             existingSecret: temporal-sql-secrets-admin
@@ -64,7 +60,6 @@ temporal:
             existingSecretKey: visibility.sql.dsn
         annotations:
           argocd.argoproj.io/hook: PreSync
-          # Keep failed jobs for debugging; recreate on next sync
           argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookFailed
           argocd.argoproj.io/sync-wave: "-1"
 
@@ -82,7 +77,7 @@ temporal:
           argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookFailed
           argocd.argoproj.io/sync-wave: "-1"
 
-      # (Optional) auto-create a default namespace after schema is ready
+      # Auto-create a namespace after schema is ready
       createNamespace:
         enabled: true
         namespace: default
