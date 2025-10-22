@@ -49,7 +49,7 @@ temporal:
         repository: temporalio/admin-tools
         tag: "1.28"
 
-      # We disable built-in schema jobs since DBs are already initialized/migrated
+      # Disable built-in schema jobs (DBs already initialized/migrated)
       setup:
         enabled: false
       update:
