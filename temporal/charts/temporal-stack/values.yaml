@@ -9,7 +9,6 @@ temporal:
       repository: temporalio/server
       tag: "1.28.1"
 
-    # Optional: removes auth warnings in logs (keep if you're not using auth)
     extraArgs:
       - --allow-no-auth
 
@@ -43,11 +42,10 @@ temporal:
         mountPath: /var/run/temporal/pg
         readOnly: true
 
-    # --- Schema Jobs (as Argo CD hooks) ---
     schema:
       image:
         repository: temporalio/admin-tools
-        tag: "1.28"   # valid tag
+        tag: "1.28"   # known-good; avoids 404s
 
       setup:
         enabled: true
@@ -77,7 +75,6 @@ temporal:
           argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookFailed
           argocd.argoproj.io/sync-wave: "-1"
 
-      # Auto-create a namespace after schema is ready
       createNamespace:
         enabled: true
         namespace: default
