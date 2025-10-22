@@ -1,4 +1,3 @@
-# temporal/charts/temporal-stack/values.yaml
 temporal:
   cassandra:
     enabled: false
@@ -6,17 +5,26 @@ temporal:
     enabled: false
 
   server:
+    # Keep server at a real tag you already use successfully
+    image:
+      repository: temporalio/server
+      tag: "1.28.1"
+
+    # Silence the auth warning seen in logs
+    extraArgs:
+      - --allow-no-auth
+
     config:
       persistence:
         default:
           driver: sql
           sql:
-            driver: postgres12           # use "postgres12" for Temporal chart
+            driver: postgres12
             host: temporal-pg-rw.postgres-temporal.svc.cluster.local
             port: 5432
             database: temporal
             user: temporal
-            existingSecret: temporal-sql-secrets   # chart will read key "password" from this secret
+            existingSecret: temporal-sql-secrets     # reads key "password"
         visibility:
           driver: sql
           sql:
@@ -27,7 +35,6 @@ temporal:
             user: temporal
             existingSecret: temporal-sql-secrets
 
-    # keep your CA mount if/when you move to TLS; with sslmode=disable it's not used
     extraVolumes:
       - name: pg-ca
         secret:
@@ -37,21 +44,46 @@ temporal:
         mountPath: /var/run/temporal/pg
         readOnly: true
 
-    # Schema Jobs as Argo hooks (we’ll tweak deletion policy below)
+    # --- Schema Jobs (run by Argo CD hooks) ---
     schema:
+      # Image/tag that actually exists (avoid 1.28.0 which 404s)
+      image:
+        repository: temporalio/admin-tools
+        tag: "1.28"
+
       setup:
         enabled: true
-        existingSecret: temporal-sql-secrets-admin
-        existingSecretKey: default.sql.dsn   # this key is fine for the schema job (it uses DSN)
+        # If you store DSNs in a secret (recommended for schema jobs),
+        # provide *both* default and visibility DSNs:
+        datastores:
+          default:
+            existingSecret: temporal-sql-secrets-admin
+            existingSecretKey: default.sql.dsn
+          visibility:
+            existingSecret: temporal-sql-secrets-admin
+            existingSecretKey: visibility.sql.dsn
         annotations:
           argocd.argoproj.io/hook: PreSync
-          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded,HookFailed
+          # Keep failed jobs for debugging; recreate on next sync
+          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookFailed
           argocd.argoproj.io/sync-wave: "-1"
+
       update:
         enabled: true
-        existingSecret: temporal-sql-secrets-admin
-        existingSecretKey: default.sql.dsn
+        datastores:
+          default:
+            existingSecret: temporal-sql-secrets-admin
+            existingSecretKey: default.sql.dsn
+          visibility:
+            existingSecret: temporal-sql-secrets-admin
+            existingSecretKey: visibility.sql.dsn
         annotations:
           argocd.argoproj.io/hook: PreSync
-          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded,HookFailed
+          argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookFailed
           argocd.argoproj.io/sync-wave: "-1"
+
+      # (Optional) auto-create a default namespace after schema is ready
+      createNamespace:
+        enabled: true
+        namespace: default
+        retention: 7d
