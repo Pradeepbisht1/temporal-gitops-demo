@@ -44,19 +44,16 @@ temporal:
       - name: pg-ca
         mountPath: /var/run/temporal/pg
         readOnly: true
-
+ 
     schema:
       image:
         repository: temporalio/admin-tools
         tag: "1.28"
+        
+      createDatabase: { enabled: false }
+      setup:          { enabled: false }
+      update:         { enabled: false }
 
-      # Disable all built-in schema jobs (DBs already created/migrated)
-      createDatabase:
-        enabled: false
-      setup:
-        enabled: false
-      update:
-        enabled: false
 
       # Keep namespace creation (creates 'default' if missing)
       createNamespace:
