@@ -9,6 +9,7 @@ temporal:
       repository: temporalio/server
       tag: "1.28.1"
 
+    # Dev only: silence auth warning
     extraArgs:
       - --allow-no-auth
 
@@ -22,7 +23,7 @@ temporal:
             port: 5432
             database: temporal
             user: temporal
-            existingSecret: temporal-sql-secrets   # key: password
+            existingSecret: temporal-sql-secrets   # key must be: password
         visibility:
           driver: sql
           sql:
@@ -31,9 +32,9 @@ temporal:
             port: 5432
             database: temporal_visibility
             user: temporal
-            existingSecret: temporal-sql-secrets   # key: password
+            existingSecret: temporal-sql-secrets   # key must be: password
 
-    # (optional) TLS mounts if you use them later
+    # Optional TLS mounts (safe to keep even if not used yet)
     extraVolumes:
       - name: pg-ca
         secret:
@@ -43,33 +44,38 @@ temporal:
         mountPath: /var/run/temporal/pg
         readOnly: true
 
+    # ---- Disable all schema jobs (the main kill switch) ----
     schema:
-      #  THIS is the main kill switch
       enabled: false
-
       image:
         repository: temporalio/admin-tools
         tag: "1.28"
-
-      # Keep all sub-jobs off too (belt & suspenders)
-      createDatabase: { enabled: false }
-      setup:          { enabled: false }
-      update:         { enabled: false }
-
-      # Optional: if you don’t want the ns job either, set to false
+      createDatabase:
+        enabled: false
+      setup:
+        enabled: false
+      update:
+        enabled: false
+      # Also disable namespace creation job
       createNamespace:
         enabled: false
         namespace: default
         retention: 7d
 
-#  Monitoring toggles MUST be top-level (siblings of `temporal`)
+# ---- Monitoring toggles must be TOP-LEVEL (siblings of `temporal`) ----
 grafana:
   enabled: false
 
 prometheus:
   enabled: false
-  server:          { enabled: false }
-  alertmanager:    { enabled: false }
-  pushgateway:     { enabled: false }
-  kubeStateMetrics:{ enabled: false }
-  nodeExporter:    { enabled: false }
+  server:
+    enabled: false
+  alertmanager:
+    enabled: false
+  pushgateway:
+    enabled: false
+  kubeStateMetrics:
+    enabled: false
+  nodeExporter:
+    enabled: false
+
