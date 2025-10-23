@@ -1,4 +1,3 @@
-# charts/temporal-stack/values.yaml
 temporal:
   cassandra:
     enabled: false
@@ -53,7 +52,9 @@ temporal:
         repository: temporalio/admin-tools
         tag: "1.28"
 
-      # Disable built-in schema jobs — DBs already initialized/migrated
+      # 🔒 Turn off all built-in schema jobs (we already created/migrated DBs)
+      createDatabase:
+        enabled: false
       setup:
         enabled: false
       update:
