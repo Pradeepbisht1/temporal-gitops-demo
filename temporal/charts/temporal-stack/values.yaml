@@ -52,7 +52,7 @@ temporal:
         repository: temporalio/admin-tools
         tag: "1.28"
 
-      # 🔒 Turn off all built-in schema jobs (we already created/migrated DBs)
+      # Disable all built-in schema jobs (DBs already created/migrated)
       createDatabase:
         enabled: false
       setup:
@@ -60,7 +60,7 @@ temporal:
       update:
         enabled: false
 
-      # Keep namespace creation on (harmless; creates 'default' ns if missing)
+      # Keep namespace creation (creates 'default' if missing)
       createNamespace:
         enabled: true
         namespace: default
