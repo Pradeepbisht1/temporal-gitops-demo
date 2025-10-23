@@ -24,8 +24,7 @@ temporal:
             port: 5432
             database: temporal
             user: temporal
-            # Secret must contain key: password
-            existingSecret: temporal-sql-secrets
+            existingSecret: temporal-sql-secrets   # key: password
         visibility:
           driver: sql
           sql:
@@ -34,8 +33,7 @@ temporal:
             port: 5432
             database: temporal_visibility
             user: temporal
-            # Secret must contain key: password
-            existingSecret: temporal-sql-secrets
+            existingSecret: temporal-sql-secrets   # key: password
 
     # Optional (only if you later enable TLS to Postgres)
     extraVolumes:
