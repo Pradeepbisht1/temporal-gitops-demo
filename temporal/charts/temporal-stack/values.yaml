@@ -9,8 +9,6 @@ temporal:
     image:
       repository: temporalio/server
       tag: "1.28.1"
-
-    # Optional: silence auth warning in dev
     extraArgs:
       - --allow-no-auth
 
@@ -35,7 +33,7 @@ temporal:
             user: temporal
             existingSecret: temporal-sql-secrets   # key: password
 
-    # Optional (only if you later enable TLS to Postgres)
+    # Optional (TLS to Postgres later)
     extraVolumes:
       - name: pg-ca
         secret:
@@ -44,37 +42,37 @@ temporal:
       - name: pg-ca
         mountPath: /var/run/temporal/pg
         readOnly: true
- 
+
     schema:
       image:
         repository: temporalio/admin-tools
         tag: "1.28"
-        
+
+      # TURN OFF all built-in schema jobs
+      enabled: false               # <- belts & suspenders
       createDatabase: { enabled: false }
       setup:          { enabled: false }
       update:         { enabled: false }
 
-
-      # Keep namespace creation (creates 'default' if missing)
+      # If you still want auto-create namespace, flip this to true.
       createNamespace:
         enabled: true
         namespace: default
         retention: 7d
 
+# ---------- MONITORING STACK (root-level) ----------
+grafana:
+  enabled: false
 
-      grafana:
-       enabled: false
-
-      prometheus:
-       server:
-       enabled: false
-       alertmanager:
-       enabled: false
-       pushgateway:
-       enabled: false
-       kubeStateMetrics:
-       enabled: false
-       nodeExporter:
-       enabled: false
-
-
+prometheus:
+  enabled: false
+  server:
+    enabled: false
+  alertmanager:
+    enabled: false
+  pushgateway:
+    enabled: false
+  kubeStateMetrics:
+    enabled: false
+  nodeExporter:
+    enabled: false
