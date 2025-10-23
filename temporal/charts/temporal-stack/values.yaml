@@ -9,7 +9,6 @@ temporal:
       repository: temporalio/server
       tag: "1.28.1"
 
-    # Dev only: silence auth warning
     extraArgs:
       - --allow-no-auth
 
@@ -23,7 +22,7 @@ temporal:
             port: 5432
             database: temporal
             user: temporal
-            existingSecret: temporal-sql-secrets   # key must be: password
+            existingSecret: temporal-sql-secrets   # key: password
         visibility:
           driver: sql
           sql:
@@ -32,9 +31,9 @@ temporal:
             port: 5432
             database: temporal_visibility
             user: temporal
-            existingSecret: temporal-sql-secrets   # key must be: password
+            existingSecret: temporal-sql-secrets   # key: password
 
-    # Optional TLS mounts (safe to keep even if not used yet)
+    # optional TLS mounts (ok to leave as-is / remove)
     extraVolumes:
       - name: pg-ca
         secret:
@@ -44,38 +43,35 @@ temporal:
         mountPath: /var/run/temporal/pg
         readOnly: true
 
-    # ---- Disable all schema jobs (the main kill switch) ----
     schema:
-      enabled: false
+      #  schema runner ON, but DB create OFF
+      enabled: true
+
       image:
         repository: temporalio/admin-tools
         tag: "1.28"
+
       createDatabase:
-        enabled: false
+        enabled: false     
       setup:
-        enabled: false
+        enabled: true         
       update:
-        enabled: false
-      # Also disable namespace creation job
+        enabled: true         
+
+      # optional: Helm se namespace banana ho to ON; warna tctl se kar lena
       createNamespace:
-        enabled: false
+        enabled: true
         namespace: default
         retention: 7d
 
-# ---- Monitoring toggles must be TOP-LEVEL (siblings of `temporal`) ----
+# Monitoring stack OFF (clean slate)
 grafana:
   enabled: false
 
 prometheus:
   enabled: false
-  server:
-    enabled: false
-  alertmanager:
-    enabled: false
-  pushgateway:
-    enabled: false
-  kubeStateMetrics:
-    enabled: false
-  nodeExporter:
-    enabled: false
-
+  server:           { enabled: false }
+  alertmanager:     { enabled: false }
+  pushgateway:      { enabled: false }
+  kubeStateMetrics: { enabled: false }
+  nodeExporter:     { enabled: false }
