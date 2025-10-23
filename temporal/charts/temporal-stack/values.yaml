@@ -60,3 +60,21 @@ temporal:
         enabled: true
         namespace: default
         retention: 7d
+
+
+      grafana:
+       enabled: false
+
+      prometheus:
+       server:
+       enabled: false
+       alertmanager:
+       enabled: false
+       pushgateway:
+       enabled: false
+       kubeStateMetrics:
+       enabled: false
+       nodeExporter:
+       enabled: false
+
+
