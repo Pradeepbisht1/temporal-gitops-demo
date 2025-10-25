@@ -10,6 +10,7 @@ spec:
 
   storage:
     size: 20Gi
+    # storageClass: gp3   # <- uncomment if needed
 
   enableSuperuserAccess: true
   superuserSecret:
@@ -21,19 +22,34 @@ spec:
       encoding: "UTF8"
       localeCType: "en_US.UTF-8"
       localeCollate: "en_US.UTF-8"
-      # NOTE: We keep DB/user creation outside to avoid cleartext in manifest.
-      # We'll create DBs via Temporal schema jobs or the job below.
 
   monitoring:
     enablePodMonitor: false
 
-  # Anti-fargate example (keep if needed for your cluster)
-  nodeMaintenanceWindow: {}
+  # === SCHEDULING FIXES ===
+  # Prefer/force scheduling on EC2 nodes (if your NodePool sets this label)
+  nodeSelector:
+    eks.amazonaws.com/compute-type: "ec2"
+
+  # Tolerate Karpenter disruption taint; do NOT tolerate Fargate taint
+  tolerations:
+    - key: "karpenter.sh/disrupted"
+      operator: "Exists"
+      effect: "NoSchedule"
+
   affinity:
+    # Keep CNPG's anti-affinity preference (spread replicas)
     podAntiAffinityType: preferred
-    tolerations: []
-    nodeSelector:
-      eks.amazonaws.com/compute-type: "ec2"
+
+    # Hard rule: never land on Fargate
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: eks.amazonaws.com/compute-type
+                operator: NotIn
+                values: ["fargate"]
+
   resources:
     requests:
       cpu: "500m"
