@@ -1,13 +1,13 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
+metadata:
   name: temporal-pg
   namespace: postgres-temporal
   annotations:
-    # CNPG CRD/webhook fully ready hone se pehle Argo dry-run skip kare
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
-    # (optional) App-of-Apps me order control
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+
 spec:
   instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:16.4
