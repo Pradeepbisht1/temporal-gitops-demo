@@ -7,27 +7,33 @@ spec:
   instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:16.4
   primaryUpdateStrategy: unsupervised
+
   storage:
     size: 20Gi
+
+  enableSuperuserAccess: true
   superuserSecret:
     name: temporal-pg-superuser
-  enableSuperuserAccess: true
+
   bootstrap:
     initdb:
-      database: temporal
-      owner: temporal
-      secret:
-        name: temporal-app-user
+      dataChecksums: true
+      encoding: "UTF8"
+      localeCType: "en_US.UTF-8"
+      localeCollate: "en_US.UTF-8"
+      # NOTE: We keep DB/user creation outside to avoid cleartext in manifest.
+      # We'll create DBs via Temporal schema jobs or the job below.
+
   monitoring:
     enablePodMonitor: false
+
+  # Anti-fargate example (keep if needed for your cluster)
+  nodeMaintenanceWindow: {}
   affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: eks.amazonaws.com/compute-type
-                operator: NotIn
-                values: ["fargate"]
+    podAntiAffinityType: preferred
+    tolerations: []
+    nodeSelector:
+      eks.amazonaws.com/compute-type: "ec2"
   resources:
     requests:
       cpu: "500m"
@@ -35,6 +41,7 @@ spec:
     limits:
       cpu: "1"
       memory: "2Gi"
-  # internal service names you can use for DSN:
-  # - temporal-pg-rw.postgres-temporal.svc.cluster.local (primary)
-  # - temporal-pg-ro.postgres-temporal.svc.cluster.local (read)
+
+  # Services:
+  # - temporal-pg-rw.postgres-temporal.svc.cluster.local (primary RW)
+  # - temporal-pg-ro.postgres-temporal.svc.cluster.local (read-only)
