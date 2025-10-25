@@ -3,6 +3,11 @@ kind: Cluster
 metadata:
   name: temporal-pg
   namespace: postgres-temporal
+  annotations:
+    # CNPG CRD/webhook fully ready hone se pehle Argo dry-run skip kare
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    # (optional) App-of-Apps me order control
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:16.4
@@ -10,7 +15,7 @@ spec:
 
   storage:
     size: 20Gi
-    # storageClass: gp3   # <- uncomment if needed
+    # storageClass: gp3   # <- agar default SC sahi nahi hai to uncomment
 
   enableSuperuserAccess: true
   superuserSecret:
@@ -26,22 +31,21 @@ spec:
   monitoring:
     enablePodMonitor: false
 
-  # === SCHEDULING FIXES ===
-  # Prefer/force scheduling on EC2 nodes (if your NodePool sets this label)
+  # === Scheduling ===
+  # Prefer/force EC2 nodes if NodePool ye label deta hai
   nodeSelector:
     eks.amazonaws.com/compute-type: "ec2"
 
-  # Tolerate Karpenter disruption taint; do NOT tolerate Fargate taint
+  # Avoid Fargate; Karpenter disruption ko tolerate karo
   tolerations:
     - key: "karpenter.sh/disrupted"
       operator: "Exists"
       effect: "NoSchedule"
 
   affinity:
-    # Keep CNPG's anti-affinity preference (spread replicas)
+    # replicas ko spread karne ke liye
     podAntiAffinityType: preferred
-
-    # Hard rule: never land on Fargate
+    # Hard rule: Fargate pe kabhi schedule na ho
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
