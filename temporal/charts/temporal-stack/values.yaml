@@ -1,1 +1,63 @@
+temporal:
+  server:
+    image:
+      tag: "1.28.1"
+    extraArgs:
+      - "--allow-no-auth"
+    config:
+      persistence:
+        defaultStore: sql
+        numHistoryShards: 4
+      namespaces:
+        - name: default
+          retention: 7d
 
+    sql:
+      driver: postgres
+      user: "${POSTGRES_USER}"
+      password: "${POSTGRES_PWD}"
+      host: "temporal-pg-rw.postgres-temporal.svc.cluster.local"
+      port: 5432
+      database: "temporal"
+      ssl:
+        enabled: false
+      visibility:
+        user: "${POSTGRES_USER}"
+        password: "${POSTGRES_PWD}"
+        host: "temporal-pg-rw.postgres-temporal.svc.cluster.local"
+        port: 5432
+        database: "temporal_visibility"
+        ssl:
+          enabled: false
+
+    additionalEnv:
+      - name: SQL_MAX_IDLE_CONNS
+        value: "50"
+      - name: SQL_MAX_OPEN_CONNS
+        value: "200"
+      - name: SQL_CONN_MAX_LIFETIME
+        value: "1h"
+
+  # First sync only → true; schema banne ke baad dono false kar dena.
+  schema:
+    createDatabase:
+      enabled: false
+    setup:
+      enabled: true
+    update:
+      enabled: true
+
+  # pass DB creds via secret
+  envFrom:
+    - secretRef:
+        name: temporal-sql-secrets
+
+  # Optional: replicas tweak (dev)
+  history:
+    replicaCount: 1
+  matching:
+    replicaCount: 1
+  frontend:
+    replicaCount: 1
+  worker:
+    replicaCount: 1
