@@ -8,14 +8,13 @@ temporal:
       persistence:
         defaultStore: sql
         numHistoryShards: 4
-      # FIX: namespaces must be a map with {create, namespace: []}
+      # namespaces must be a map with {create, namespace: []}
       namespaces:
         create: true
         namespace:
           - name: default
             retention: 7d
 
-    # (Keep your SQL wiring as-is)
     sql:
       driver: postgres
       user: "${POSTGRES_USER}"
@@ -45,7 +44,7 @@ temporal:
   # first sync only — run DB migrations
   schema:
     createDatabase:
-      enabled: true    # <<< bootstrap: ON
+      enabled: true
     setup:
       enabled: true
     update:
@@ -63,3 +62,24 @@ temporal:
     replicaCount: 1
   worker:
     replicaCount: 1
+
+# --- Not needed with Postgres: turn off these extras ---
+cassandra:
+  enabled: false
+
+elasticsearch:
+  enabled: false
+
+# --- Turn off monitoring stack to avoid PVC & extra pods ---
+prometheus:
+  enabled: false
+grafana:
+  enabled: false
+alertmanager:
+  enabled: false
+pushgateway:
+  enabled: false
+kubeStateMetrics:
+  enabled: false
+nodeExporter:
+  enabled: false
