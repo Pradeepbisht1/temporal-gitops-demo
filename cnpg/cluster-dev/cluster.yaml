@@ -30,13 +30,11 @@ spec:
   monitoring:
     enablePodMonitor: false
 
-  # keep pods on EC2, never on Fargate
-  nodeSelector:
-    eks.amazonaws.com/compute-type: "ec2"
   tolerations:
     - key: "karpenter.sh/disrupted"
       operator: "Exists"
       effect: "NoSchedule"
+
   affinity:
     podAntiAffinityType: preferred
     nodeAffinity:
@@ -44,8 +42,8 @@ spec:
         nodeSelectorTerms:
           - matchExpressions:
               - key: eks.amazonaws.com/compute-type
-                operator: NotIn
-                values: ["fargate"]
+                operator: In
+                values: ["ec2"]
 
   resources:
     requests:
