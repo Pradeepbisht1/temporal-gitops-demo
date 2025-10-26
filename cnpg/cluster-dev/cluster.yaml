@@ -30,20 +30,17 @@ spec:
   monitoring:
     enablePodMonitor: false
 
-  # Scheduling & placement (must be under spec.affinity)
+  # Scheduling & placement
   affinity:
-    # keep instances spread across nodes
+    # spread instances across nodes when possible
     podAntiAffinityType: preferred
-
-    # keep pods on EC2, never on Fargate
-    nodeSelector:
-      eks.amazonaws.com/compute-type: "ec2"
-
-    # tolerate Karpenter disruption taint if present
-    tolerations:
-      - key: "karpenter.sh/disrupted"
-        operator: "Exists"
-        effect: "NoSchedule"
+    # keep pods on EC2 nodes; exclude Fargate by requiring the Fargate label to be absent
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: eks.amazonaws.com/compute-type
+                operator: DoesNotExist
 
   # Instance resources
   resources:
