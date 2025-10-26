@@ -8,10 +8,14 @@ temporal:
       persistence:
         defaultStore: sql
         numHistoryShards: 4
+      # FIX: namespaces must be a map with {create, namespace: []}
       namespaces:
-        - name: default
-          retention: 7d
+        create: true
+        namespace:
+          - name: default
+            retention: 7d
 
+    # (Keep your SQL wiring as-is)
     sql:
       driver: postgres
       user: "${POSTGRES_USER}"
@@ -38,10 +42,10 @@ temporal:
       - name: SQL_CONN_MAX_LIFETIME
         value: "1h"
 
-  # first sync only — runs DB migrations
+  # first sync only — run DB migrations
   schema:
     createDatabase:
-      enabled: false
+      enabled: true    # <<< bootstrap: ON
     setup:
       enabled: true
     update:
