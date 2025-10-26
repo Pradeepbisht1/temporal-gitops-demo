@@ -38,7 +38,7 @@ temporal:
       - name: SQL_CONN_MAX_LIFETIME
         value: "1h"
 
-  # First sync ONLY: migrations ON
+  # first sync only — runs DB migrations
   schema:
     createDatabase:
       enabled: false
@@ -47,12 +47,10 @@ temporal:
     update:
       enabled: true
 
-  # DB creds via secret
   envFrom:
     - secretRef:
         name: temporal-sql-secrets
 
-  # Light dev footprint
   history:
     replicaCount: 1
   matching:
