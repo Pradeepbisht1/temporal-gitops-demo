@@ -1,14 +1,12 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-metadata:
   name: temporal-pg
   namespace: postgres-temporal
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     argocd.argoproj.io/compare-options: IgnoreExtraneous
     argocd.argoproj.io/sync-wave: "1"
-
 spec:
   instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:16.4
@@ -16,7 +14,7 @@ spec:
 
   storage:
     size: 20Gi
-    # storageClass: gp3   # <- agar default SC sahi nahi hai to uncomment
+    # storageClass: gp3  # set if your default isn't what you want
 
   enableSuperuserAccess: true
   superuserSecret:
@@ -32,21 +30,15 @@ spec:
   monitoring:
     enablePodMonitor: false
 
-  # === Scheduling ===
-  # Prefer/force EC2 nodes if NodePool ye label deta hai
+  # keep pods on EC2, never on Fargate
   nodeSelector:
     eks.amazonaws.com/compute-type: "ec2"
-
-  # Avoid Fargate; Karpenter disruption ko tolerate karo
   tolerations:
     - key: "karpenter.sh/disrupted"
       operator: "Exists"
       effect: "NoSchedule"
-
   affinity:
-    # replicas ko spread karne ke liye
     podAntiAffinityType: preferred
-    # Hard rule: Fargate pe kabhi schedule na ho
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
@@ -62,7 +54,3 @@ spec:
     limits:
       cpu: "1"
       memory: "2Gi"
-
-  # Services:
-  # - temporal-pg-rw.postgres-temporal.svc.cluster.local (primary RW)
-  # - temporal-pg-ro.postgres-temporal.svc.cluster.local (read-only)
